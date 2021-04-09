@@ -28,17 +28,18 @@ def get_texts(doc, result: list):
         e.get_pos()[1].x，e.get_pos()[1].y: model space的文字下中坐标
         e.dxf.text: TEXT的文本
         """
-        result.append({"type": "TEXT", "x": e.get_pos()[1].x, "y": e.get_pos()[1].y, "text": e.dxf.text})
+        result.append({"type": "TEXT", "layer": e.dxf.layer,
+                       "x": e.get_pos()[1].x, "y": e.get_pos()[1].y, "text": e.dxf.text})
 
     es = doc.modelspace().query('MTEXT')
     for e in es:
         t = re.sub(r'\{\\f[^;]+;([^}]+)\}', r'\1', e.plain_text()).replace('\\P', '\n')
-        result.append({"type": "MTEXT", "x": e.dxf.insert.x, "y": e.dxf.insert.y, "text": t})
+        result.append({"type": "MTEXT", "layer": e.dxf.layer,
+                       "x": e.dxf.insert.x, "y": e.dxf.insert.y, "text": t})
 
 
-def get_viewports(doc, result: list):
-    lo = doc.layout('布局1')
-    es = lo.query('VIEWPORT')
+def get_layout_viewports(doc, layout, layout_name, result: list):
+    es = layout.query('VIEWPORT')
     for e in es:
         """
         e.dxf.center.x, e.dxf.center.y: paper space的坐标，和model space坐标对不上
@@ -55,8 +56,14 @@ def get_viewports(doc, result: list):
         aspect_ratio = e.dxf.height / e.dxf.view_height
         width = e.dxf.width / aspect_ratio
         height = e.dxf.view_height
-        result.append({"type": "VIEWPORT", "id": e.dxf.id, "x": x, "y": y,
-                      "width": width, "height": height, "aspect_ratio": aspect_ratio})
+        result.append({"type": "VIEWPORT", "id": e.dxf.id, "layer": e.dxf.layer, "layout": layout_name,
+                       "x": x, "y": y,
+                       "width": width, "height": height, "aspect_ratio": aspect_ratio})
+
+
+def get_viewports(doc, result: list):
+    for name in doc.layout_names():
+        get_layout_viewports(doc, doc.layout(name), name, result)
 
 
 def main():
